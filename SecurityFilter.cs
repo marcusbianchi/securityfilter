@@ -20,39 +20,39 @@ namespace securityfilter {
         public override void OnActionExecuting (ActionExecutingContext context) {
             IEncryptService _encryptService = (IEncryptService) context.HttpContext.RequestServices.GetService (typeof (IEncryptService));
             IConfiguration _configuration = (IConfiguration) context.HttpContext.RequestServices.GetService (typeof (IConfiguration));
-            //if (!IsSameHost (context)) {
-            if (_encryptService != null) {
-                if (String.IsNullOrEmpty (_configuration["Disable"])) {
-                    var header = context.HttpContext.Request.Headers["security"].ToString ();
-                    if (String.IsNullOrEmpty (header)) {
-                        SendResponse (context, "No Security Header in the request", 401);
-                    } else {
-                        string jsonUser = _encryptService.Decrypt (header);
-                        if (jsonUser != null) {
-                            User user = JsonConvert.DeserializeObject<User> (jsonUser);
-                            LogRequest (context, _configuration, user.username);
-                            if (user != null && user.userGroup != null) {
-                                List<string> permissions = new List<string> (user.userGroup.permissions);
-                                if (permissions.Count != 0) {
-                                    if (!permissions.Contains (_permission))
-                                        SendResponse (context, "This UserGroup Doesn't have permission to this endpoint", 401);
+            if (!IsSameHost (context)) {
+                if (_encryptService != null) {
+                    if (String.IsNullOrEmpty (_configuration["Disable"])) {
+                        var header = context.HttpContext.Request.Headers["security"].ToString ();
+                        if (String.IsNullOrEmpty (header)) {
+                            SendResponse (context, "No Security Header in the request", 401);
+                        } else {
+                            string jsonUser = _encryptService.Decrypt (header);
+                            if (jsonUser != null) {
+                                User user = JsonConvert.DeserializeObject<User> (jsonUser);
+                                LogRequest (context, _configuration, user.username);
+                                if (user != null && user.userGroup != null) {
+                                    List<string> permissions = new List<string> (user.userGroup.permissions);
+                                    if (permissions.Count != 0) {
+                                        if (!permissions.Contains (_permission))
+                                            SendResponse (context, "This UserGroup Doesn't have permission to this endpoint", 401);
+                                    } else {
+                                        SendResponse (context, "This UserGroup Doesn't have permissions", 401);
+                                    }
                                 } else {
-                                    SendResponse (context, "This UserGroup Doesn't have permissions", 401);
+                                    SendResponse (context, "This User Doesn't belong to a group", 401);
                                 }
                             } else {
-                                SendResponse (context, "This User Doesn't belong to a group", 401);
+                                SendResponse (context, " Decript Error.", 401);
                             }
-                        } else {
-                            SendResponse (context, " Decript Error.", 401);
                         }
+                    } else {
+                        SendResponse (context, "No Decript configuration on API DI.", 401);
                     }
-                } else {
-                    SendResponse (context, "No Decript configuration on API DI.", 401);
-                }
+                } else
+                    Console.WriteLine ("Security Disabled");
             } else
-                Console.WriteLine ("Security Disabled");
-            // } else
-            //     Console.WriteLine ("Same Host Request");
+                Console.WriteLine ("Same Host Request");
         }
 
         private void SendResponse (ActionExecutingContext context, string message, int code) {
