@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Configuration;
@@ -20,7 +21,7 @@ namespace securityfilter {
         public override void OnActionExecuting (ActionExecutingContext context) {
             IEncryptService _encryptService = (IEncryptService) context.HttpContext.RequestServices.GetService (typeof (IEncryptService));
             IConfiguration _configuration = (IConfiguration) context.HttpContext.RequestServices.GetService (typeof (IConfiguration));
-            if (!IsSameHost (context)) {
+            if (!IsLocal (context)) {
                 if (_encryptService != null) {
                     if (String.IsNullOrEmpty (_configuration["Disable"])) {
                         var header = context.HttpContext.Request.Headers["security"].ToString ();
@@ -62,11 +63,6 @@ namespace securityfilter {
             context.Result = new JsonResult (wrongResult);
         }
 
-        private bool IsSameHost (ActionExecutingContext context) {
-            return context.HttpContext.Connection.RemoteIpAddress.ToString () ==
-                context.HttpContext.Connection.LocalIpAddress.ToString ();
-        }
-
         private void LogRequest (ActionExecutingContext context, IConfiguration _configuration, string user) {
             if (!String.IsNullOrEmpty (_configuration["SecurityLogFolder"])) {
                 Directory.CreateDirectory (_configuration["SecurityLogFolder"]);
@@ -81,6 +77,27 @@ namespace securityfilter {
                 }
             }
 
+        }
+
+        private static bool IsLocal (ActionExecutingContext context) {
+            var connection = context.HttpContext.Connection;
+            var localIp = connection.LocalIpAddress.MapToIPv4 ().ToString ();
+            var remoteIp = connection.RemoteIpAddress.MapToIPv4 ().ToString ();
+            if (connection.RemoteIpAddress != null) {
+                if (connection.LocalIpAddress != null) {
+                    if (localIp.Equals (remoteIp))
+                        return true;
+                    return context.HttpContext.Request.Host.Host == "localhost";
+
+                } else {
+                    return IPAddress.IsLoopback (connection.RemoteIpAddress);
+                }
+            }
+            if (connection.RemoteIpAddress == null && connection.LocalIpAddress == null) {
+                return true;
+            }
+
+            return false;
         }
     }
 }
