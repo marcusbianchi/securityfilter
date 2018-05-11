@@ -4,7 +4,7 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
       <PackageId>lorien.securityfilter</PackageId>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Version>0.1.24</Version>
+    <Version>0.2.1</Version>
     <Authors>Marcus Bianchi</Authors>
     <Company>SPI</Company>
     <Product>Lorien</Product>

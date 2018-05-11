@@ -22,8 +22,8 @@ namespace securityfilter {
             IEncryptService _encryptService = (IEncryptService) context.HttpContext.RequestServices.GetService (typeof (IEncryptService));
             IConfiguration _configuration = (IConfiguration) context.HttpContext.RequestServices.GetService (typeof (IConfiguration));
             if (!IsLocal (context)) {
-                if (_encryptService != null) {
-                    if (String.IsNullOrEmpty (_configuration["Disable"])) {
+                if (String.IsNullOrEmpty (_configuration["Disable"])) {
+                    if (_encryptService != null) {
                         var header = context.HttpContext.Request.Headers["security"].ToString ();
                         if (String.IsNullOrEmpty (header)) {
                             SendResponse (context, "No Security Header in the request", 401);
@@ -48,7 +48,10 @@ namespace securityfilter {
                             }
                         }
                     } else {
-                        SendResponse (context, "No Decript configuration on API DI.", 401);
+                        SendResponse (context, "No Decript configuration on API DI.", 500);
+                        Console.WriteLine ("No Decript configuration on API DI.");
+                        Console.WriteLine ("Key Folder " + _configuration["KeyFolder"]);
+                        Console.WriteLine ("Encrypt Service " + _encryptService.ToString ());
                     }
                 } else
                     Console.WriteLine ("Security Disabled");
